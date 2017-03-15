@@ -11,6 +11,7 @@ lines = {'CaII':     [3945., 3450., 4070., 3504., 3687., 3830., 3990.],
          'FeII4800': [4966., 4350., 5350., 4450., 4650., 5050., 5285.],
          'SIIWL':    [5454., 5060., 5700., 5050., 5285., 5500., 5681.],
          'SIIWR':    [5640., 5060., 5700., 5050., 5285., 5500., 5681.],
+         'SIIW':     [5500., 5060., 5700., 5050., 5285., 5500., 5681.],
          'SiII5972': [5972., 5500., 6050., 5550., 5681., 5850., 6015.],
          'SiII6355': [6355., 5600., 6600., 5850., 6015., 6250., 6365.],
          'OICaII':   [8100., 6500., 8800., 7100., 7270., 8300., 8800.]}
@@ -84,7 +85,8 @@ class Measure(object):
         Fits a 13 point cubic spline to the spectrum
         """
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
-        knots = np.linspace(w[1], w[-2], 13)
+        knots = np.linspace(2500, 10000, 13)
+        knots = knots[(knots>=min(w))&(knots<=max(w))]
         spl = splrep(w, f, k=3, t=knots)
         f_cont = splev(w, spl)
         cont_div = f/f_cont
@@ -117,9 +119,11 @@ class Measure(object):
         Returns the spectrum in l_range.
         """  
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
-        f = f[(w > self.l_range[0]) & (w < self.l_range[1])]
-        v = v[(w > self.l_range[0]) & (w < self.l_range[1])]
-        w = w[(w > self.l_range[0]) & (w < self.l_range[1])]
+        f = f[(w >= self.l_range[0]) & (w <= self.l_range[1])]
+        v = v[(w >= self.l_range[0]) & (w <= self.l_range[1])]
+        w = w[(w >= self.l_range[0]) & (w <= self.l_range[1])]
         if len(w) == 0:
             raise MissingDataError
+        # if max(w) < self.l_range[1]:
+        #     raise MissingDataError
         return w, f, v
