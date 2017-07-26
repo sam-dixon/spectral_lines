@@ -48,7 +48,7 @@ class Measure(object):
         self.l_rrange = lines[line][5:]
         self.interp_grid = interp_grid
         if sim:
-            self.wave_sn, self.flux_sn, self.var_sn = spectrum
+            self.wave_sn, self.flux_sn, self.var_sn = np.array(spectrum)
         else:
             self.wave_sn, self.flux_sn, self.var_sn = spectrum.rf_spec()
         if norm == 'SNID':
