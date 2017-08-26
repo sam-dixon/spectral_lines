@@ -1,5 +1,5 @@
 import numpy as np
-from base import Measure
+from .base import Measure
 from scipy.signal import savgol_filter
 
 
@@ -60,11 +60,11 @@ class SG(Measure):
         if W is None:
             pe = np.sum(r**2/var) + 2 * np.sum(np.diag(B)) - len(var)
             if pe < 0 and verbose:
-                print "WARNING <prediction_error>: pe < 0, variance probably under estimated"
+                print("WARNING <prediction_error>: pe < 0, variance probably under estimated")
         else:
             pe = np.dot(np.dot(r, W), r) + 2 * np.sum(np.diag(B)) - len(var)
             if pe < 0 and verbose:
-                print "WARNING <prediction_error>: pe < 0, variance probably under estimated"
+                print("WARNING <prediction_error>: pe < 0, variance probably under estimated")
         return pe
 
     def sg_find_num_points(self, x, data, var, pol_degree=2, corr=0.0, verbose=False):
@@ -89,7 +89,7 @@ class SG(Measure):
             yy = np.dot(B, data)
             pe = self.prediction_error(yy-data, B, var, W)
             if verbose:
-                print '%d, %f' % (num_points, pe)
+                print('%d, %f' % (num_points, pe))
             e[num_points] = pe
             if (n(i_iteration*2) > len(x)):
                 #- Test to prevent the coarse exploration to end up testing
@@ -122,7 +122,7 @@ class SG(Measure):
             pe = self.prediction_error(yy-data, B, var, W)
             e[num_points] = pe
             if verbose:
-                print '%d, %f' % (num_points, pe)
+                print('%d, %f' % (num_points, pe))
             if num_points > n(i_iteration/2) and (pe-np.min(e.values()) > toler):
                 break
 

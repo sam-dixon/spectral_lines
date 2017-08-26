@@ -1,7 +1,6 @@
 import numpy as np
-from base import Measure
+from .base import Measure
 from scipy.interpolate import UnivariateSpline
-import IDRTools
 import matplotlib.pyplot as plt
 
 
@@ -19,15 +18,15 @@ class Spl(Measure):
         """
         wave, f, v = self.wave_feat, self.flux_feat, self.var_feat
         f_ts = []
-        for i in range(self.n_l/2, len(f)-self.n_l/2):
+        for i in range(int(self.n_l/2), int(len(f)-self.n_l/2)):
             sig = wave[i]*self.smooth_fac
-            sub = range(i-self.n_l/2, i+self.n_l/2)
+            sub = range(int(i-self.n_l/2), int(i+self.n_l/2))
             x = wave[i]-wave[sub]
             g = 1/np.sqrt(2*np.pi)*np.exp(-1/sig**2*x**2)
             w = g/v[sub]
             f_ts_i = np.dot(w, f[sub])/np.sum(w)
             f_ts.append(f_ts_i)
-        return wave[self.n_l/2:-self.n_l/2], np.array(f_ts)
+        return wave[int(self.n_l/2):int(-self.n_l/2)], np.array(f_ts)
 
     def get_interp_feature_spec(self, return_spl=False):
         """

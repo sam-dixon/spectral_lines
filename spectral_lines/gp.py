@@ -1,5 +1,5 @@
 import numpy as np
-from base import Measure
+from .base import Measure
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern
 
