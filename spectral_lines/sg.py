@@ -8,7 +8,7 @@ class SG(Measure):
     def __init__(self, spectrum, line='SiII6355', interp_grid=0.1, sim=False, norm=True):
         super(SG, self).__init__(spectrum, line, interp_grid, sim, norm)
 
-    def weight_matrix_corr(var, corr):
+    def weight_matrix_corr(self, var, corr):
         # computation of the weight matrix :
         V = np.diag([1.]*len(var))
         V += np.diag([corr]*(len(var)-1), 1)
@@ -16,7 +16,7 @@ class SG(Measure):
         W = np.linalg.inv(V*np.transpose([np.sqrt(var)])*np.sqrt(var))
         return W
 
-    def sg_coeff(num_points, pol_degree, diff_order=0):
+    def sg_coeff(self, num_points, pol_degree, diff_order=0):
         """ calculates filter coefficients for symmetric savitzky-golay filter.
             see: http://www.nrbook.com/a/bookcpdf/c14-8.pdf
 
