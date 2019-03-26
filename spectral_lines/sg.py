@@ -38,16 +38,16 @@ class SG(Measure):
         ATA = np.dot(A.transpose(), A)
         Am = np.linalg.inv(ATA)
         # calculate filter-coefficients
-        coeff = np.dot(Am, np.transpose(A))[diff_order]*np.factorial(diff_order)
+        coeff = np.dot(Am, np.transpose(A))[diff_order]*np.math.factorial(diff_order)
         return coeff
 
     def B_matrix_sg(self, num_points, pol_degree, dim):
         coeffs = self.sg_coeff(num_points, pol_degree)
         B = np.diag([coeffs[num_points]]*dim)
-        for i in xrange(num_points):
+        for i in range(num_points):
             B += np.diag([coeffs[num_points-1-i]]*(dim-1-i), i+1)
             B += np.diag([coeffs[num_points-1-i]]*(dim-1-i), -i-1)
-        for i in xrange(dim):
+        for i in range(dim):
             B[i, :] /= sum(B[i, :])
         return B
 
@@ -73,7 +73,7 @@ class SG(Measure):
         """
 
         def n(i_iteration):
-            return (i_iteration-1)+pol_degree/2
+            return int((i_iteration-1)+pol_degree/2)
 
         W = self.weight_matrix_corr(var, corr)
         e = {}
@@ -102,7 +102,7 @@ class SG(Measure):
                 pe = self.prediction_error(yy-data, B, var, W)
                 e[len(x)] = pe
                 finished = True
-            elif ((pe > np.min(e.values()) and np.min(e.values()) < len(x)*0.9999)):
+            elif ((pe > np.min(list(e.values())) and np.min(list(e.values())) < len(x)*0.9999)):
                 #- Test to stop when the prediction error stops decreasing and starts increasing again.
                 #- Under the assumption that the prediction error is convex and starts by decreasing, this means
                 #- that the inflection point happened just before this step.
@@ -116,18 +116,18 @@ class SG(Measure):
         toler = np.max([e[n(i_iteration/4)]-e[n(i_iteration/2)], e[min(len(x), n(i_iteration))]-e[n(i_iteration/2)]])/2
         #- Finer exploration of the region between where we know the prediction error was decreasing and
         #- either where it was increasing again or the total number of data points
-        for num_points in np.arange(n(i_iteration/4), min(n(i_iteration), len(x)), max([1, n(i_iteration/4)/10])):
+        for num_points in np.arange(n(i_iteration/4), min(n(i_iteration), len(x)), max([1, n(i_iteration/4)/10])).astype(int):
             B = self.B_matrix_sg(num_points, pol_degree, len(x))
             yy = np.dot(B, data)
             pe = self.prediction_error(yy-data, B, var, W)
             e[num_points] = pe
             if verbose:
                 print('%d, %f' % (num_points, pe))
-            if num_points > n(i_iteration/2) and (pe-np.min(e.values()) > toler):
+            if num_points > n(i_iteration/2) and (pe-np.min(list(e.values())) > toler):
                 break
 
-        result = e.keys()[e.values().index(np.min(e.values()))]
-
+        result = [key for key, val in e.items() if val==np.min(list(e.values()))][0]
+        
         if result >= len(x):
             #- This is to avoid the always problematic limit case of calculating an interpolator on all the points available (for example, in the
             #- Savitzky-Golay interpolation (ToolBox.Signal), when all the available points are selected, the convolution by the
