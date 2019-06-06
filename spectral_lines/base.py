@@ -57,6 +57,7 @@ class Measure(object):
             self.wave_sn, self.flux_sn, self.var_sn = self.get_line_norm_spec()
         try:
             self.wave_feat, self.flux_feat, self.var_feat = self.get_feature_spec()
+            self.wave_subfeat, self.flux_subfeat, self.var_subfeat = self.get_subfeature_spec()
         except MissingDataError:
             raise
 
@@ -119,11 +120,22 @@ class Measure(object):
         Returns the spectrum in l_range.
         """  
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
-        f = f[(w >= self.l_range[0]) & (w <= self.l_range[1])]
-        v = v[(w >= self.l_range[0]) & (w <= self.l_range[1])]
-        w = w[(w >= self.l_range[0]) & (w <= self.l_range[1])]
+        wave_cut = (w >= self.l_range[0]) & (w <= self.l_range[1])
+        f = f[wave_cut]
+        v = v[wave_cut]
+        w = w[wave_cut]
         if len(w) == 0:
             raise MissingDataError
-        # if max(w) < self.l_range[1]:
-        #     raise MissingDataError
+        return w, f, v
+    
+    def get_subfeature_spec(self):
+        """Returns the spectrum in restricted range.
+        """
+        w, f, v = self.wave_sn, self.flux_sn, self.var_sn
+        wave_cut = (w >= self.l_brange[0]) & (w <= self.l_rrange[1])
+        f = f[wave_cut]
+        v = v[wave_cut]
+        w = w[wave_cut]
+        if len(w) == 0:
+            raise MissingDataError
         return w, f, v
