@@ -38,6 +38,7 @@ class Gauss(Measure):
         return v_abs
     
     def get_equiv_width(self):
-        _, _, popt = self.get_interp_feature_spec(return_popt=True)
-        return popt[2]*np.sqrt(2*np.pi/popt[4]**2)
+        w, f = self.get_interp_feature_spec()
+        f_cont = self.get_pseudo_continuum()
+        return np.dot(1-(f/f_cont)[:-1], np.diff(w))
         
