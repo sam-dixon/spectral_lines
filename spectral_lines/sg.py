@@ -75,7 +75,7 @@ class SG(Measure):
     def sg_find_num_points(self, x, data, var, pol_degree=2, corr=0.):
         W = self.weight_matrix_corr(var, corr)
         e = {}
-        for num_pts in range(1, min(len(x), 33), 2):
+        for num_pts in range(1, min(int(len(x)/2), 33), 2):
             B = self.B_matrix_sg(num_pts, pol_degree, len(x))
             yy = np.dot(B, data)
             pe = self.prediction_error(yy-data, B, var, W)
