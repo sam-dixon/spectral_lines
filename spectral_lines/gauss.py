@@ -1,6 +1,6 @@
 import numpy as np
 from .base import Measure
-from scipy.optimize import curve_fit
+from iminuit import Minuit
 
 
 class Gauss(Measure):
@@ -10,9 +10,19 @@ class Gauss(Measure):
 
     def get_interp_feature_spec(self, return_popt=False):
         w, f, e = self.wave_subfeat, self.flux_subfeat, self.var_subfeat
-        g = lambda x, *p: p[0]+p[1]*x+p[2]*np.exp(-(x-p[3])**2/(2*p[4]**2))
-        p0 = [1., -0.1, -0.5, np.mean(w), 50.]
-        popt, pcov = curve_fit(g, w, f, p0=p0, sigma=e)
+        g = lambda x, *p: p[0]+p[1]*(x-p[3])+p[2]*np.exp(-(x-p[3])**2/(2*p[4]**2))
+        def chisq(a, b, amp, mu, sig):
+            return np.sum((f-g(w, a, b, amp, mu, sig))**2/e)
+        m = Minuit(chisq,
+                   a=1, limit_a=(0, 2),
+                   b=0, limit_b=(-0.1, 0.1),
+                   amp=-0.5, limit_amp=(-1, 0),
+                   mu=6150, limit_mu=(min(w), max(w)),
+                   sig=50,
+                   pedantic=False,
+                   print_level=0)
+        fval, res = m.migrad()
+        popt = [r['value'] for r in res]
         w_s = np.arange(np.min(self.wave_feat), np.max(self.wave_feat), self.interp_grid)
         if return_popt:
             return w_s, g(w_s, *popt), popt
