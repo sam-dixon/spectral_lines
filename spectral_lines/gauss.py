@@ -30,8 +30,8 @@ class Gauss(Measure):
     
     def get_pseudo_continuum(self):
         w_s, g, popt = self.get_interp_feature_spec(return_popt=True)
-        line = lambda x, *p: p[0] + p[1]*x
-        return line(w_s, *popt[:2])
+        line = lambda x, *p: p[0] + p[1]*(x-p[3])
+        return line(w_s, *popt)
     
     def get_line_velocity(self):
         """
