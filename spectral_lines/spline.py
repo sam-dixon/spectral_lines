@@ -34,7 +34,7 @@ class Spl(Measure):
         """
         w, f = self.get_smoothed_feature_spec()
         spl = UnivariateSpline(w, f, k=4, s=0)
-        n_pts = (max(w)-min(w))/self.interp_grid + 1
+        n_pts = int((max(w)-min(w))/self.interp_grid + 1)
         w_int = np.linspace(min(w), max(w), n_pts)
         f_int = spl(w_int)
         if return_spl:
