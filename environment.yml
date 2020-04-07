@@ -1,0 +1,9 @@
+name: spectral_lines
+dependencies:
+  - python=3.6
+  - numpy
+  - scipy
+  - tqdm
+  - matplotlib
+  - iminuit
+  - scikit-learn
