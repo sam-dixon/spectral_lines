@@ -27,8 +27,7 @@ class Measure(object):
 
     def __init__(self, spectrum, line='SiII6355', interp_grid=0.1, sim=False,
                  norm='SNID'):
-        """
-        Base class for measuring spectral lines in a spectrum from the IDR.
+        """Base class for measuring spectral lines in a spectrum.
 
         `spectrum` is an `IDRTools.Spectrum` object if `sim == False`, or a
         list `[wave, flux, flux_var]` if `sim == True`.
@@ -47,19 +46,28 @@ class Measure(object):
         self.l_brange = lines[line][3:5]
         self.l_rrange = lines[line][5:]
         self.interp_grid = interp_grid
+        self.norm = norm
         if sim:
             self.wave_sn, self.flux_sn, self.var_sn = np.array(spectrum)
         else:
             self.wave_sn, self.flux_sn, self.var_sn = spectrum.rf_spec()
-        if norm == 'SNID':
+        if self.norm == 'SNID':
             self.wave_sn, self.flux_sn, self.var_sn = self.get_snid_norm_spec()
-        elif norm == 'line':
+        elif self.norm == 'line':
             self.wave_sn, self.flux_sn, self.var_sn = self.get_line_norm_spec()
         try:
-            self.wave_feat, self.flux_feat, self.var_feat = self.get_feature_spec()
-            self.wave_subfeat, self.flux_subfeat, self.var_subfeat = self.get_subfeature_spec()
+            wave_feat, flux_feat, var_feat = self.get_feature_spec()
+            wave_subfeat, flux_subfeat, var_subfeat = self.get_subfeature_spec()
         except MissingDataError:
             raise
+        self.wave_feat = wave_feat
+        self.flux_feat = flux_feat
+        self.var_feat = var_feat
+        self.wave_subfeat = wave_subfeat
+        self.flux_subfeat = flux_subfeat
+        self.var_subfeat = var_subfeat
+        self._maxima = None
+        self._minimum = None
 
     def vel_space(self, wave):
         """
@@ -129,7 +137,7 @@ class Measure(object):
         return w, f, v
     
     def get_subfeature_spec(self):
-        """Returns the spectrum in restricted range.
+        """Returns the spectrum in restricted range between the
         """
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
         wave_cut = (w >= self.l_brange[0]) & (w <= self.l_rrange[1])
@@ -139,3 +147,63 @@ class Measure(object):
         if len(w) == 0:
             raise MissingDataError
         return w, f, v
+
+    def get_smooth_feature_spec(self):
+        raise NotImplementedError
+
+    def get_interp_feature_spec(self):
+        raise NotImplementedError
+
+    @property
+    def maxima(self):
+        if not self._maxima:
+            w, f = self.get_interp_feature_spec()
+            bw_cut = (w >= self.l_brange[0]) & (w <= self.l_brange[1])
+            rw_cut = (w >= self.l_rrange[0]) & (w <= self.l_rrange[1])
+            max_b_ind = np.where(f[bw_cut] == max(f[bw_cut]))[0]
+            max_r_ind = np.where(f[rw_cut] == max(f[rw_cut]))[0]
+            maxima = {'blue_max_wave': w[bw_cut][max_b_ind],
+                      'blue_max_flux': f[bw_cut][max_b_ind],
+                      'red_max_wave': w[rw_cut][max_r_ind],
+                      'red_max_flux': f[rw_cut][max_r_ind]}
+            self._maxima = maxima
+        return self._maxima
+
+    def get_pseudo_continuum(self):
+        """Returns the line connecting the ends of the feature
+        """
+        wave, _ = self.get_interp_feature_spec()
+        flux_diff = self.maxima['red_max_flux'] - self.maxima['blue_max_flux']
+        wave_diff = self.maxima['red_max_wave'] - self.maxima['blue_max_wave']
+        slope = flux_diff / wave_diff
+        inter = self.maxima['red_max_flux'] - slope * self.maxima[
+            'red_max_wave']
+        return inter + slope * wave
+
+    @property
+    def minimum(self):
+        if not self._minimum:
+            w, f = self.get_interp_feature_spec()
+            f_cont = self.get_pseudo_continuum()
+            f /= f_cont
+            search_range = (w >= self.l_brange[-1]) & (w <= self.l_rrange[0])
+            min_f = np.min(f[search_range])
+            self._minimum = w[np.where(f == min_f)][0]
+        return self._minimum
+
+    def get_line_velocity(self):
+        """
+        Find the velocity of the line (defined to be the velocity that Doppler
+        shifts l_0 to the minimum of the smoothed, interpolated spectrum)
+        """
+        v_abs = self.vel_space(self.minimum)
+        return v_abs
+
+    def get_equiv_width(self):
+        w, f = self.get_interp_feature_spec()
+        f_c = self.get_pseudo_continuum()
+        integrand = 1 - f / f_c
+        dl = np.diff(w)
+        wb_ind = np.where(w == self.maxima['blue_max_wave'])[0][0]
+        wr_ind = np.where(w == self.maxima['red_max_wave'])[0][0]
+        return np.sum(np.dot(integrand[wb_ind:wr_ind], dl[wb_ind:wr_ind]))

@@ -6,4 +6,3 @@ dependencies:
   - tqdm
   - matplotlib
   - iminuit
-  - scikit-learn

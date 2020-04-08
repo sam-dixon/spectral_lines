@@ -7,6 +7,4 @@ setup(name='spectral_lines',
       author='Sam Dixon',
       author_email='sam.dixon@berkeley.edu',
       license='MIT',
-      packages=['spectral_lines'],
-      test_suite='nose.collector',
-      tests_require=['nose'])
+      packages=['spectral_lines'])
