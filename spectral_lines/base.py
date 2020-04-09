@@ -91,11 +91,12 @@ class Measure(object):
     def get_snid_norm_spec(self):
         """
         Does SNID-like (Blondin and Tonry 2007) spectrum normalization.
-        Fits a 13 point cubic spline to the spectrum
+        Fits a 13 point cubic spline to the spectrum. Knots are evenly spaced
+        from 2500 A to 10000 A.
         """
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
         knots = np.linspace(2500, 10000, 13)
-        knots = knots[(knots>=min(w))&(knots<=max(w))]
+        knots = knots[(knots >= min(w)) & (knots <= max(w))]
         spl = splrep(w, f, k=3, t=knots)
         f_cont = splev(w, spl)
         cont_div = f/f_cont
@@ -128,7 +129,7 @@ class Measure(object):
         Returns the spectrum in l_range.
         """  
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
-        wave_cut = (w >= self.l_range[0]) & (w <= self.l_range[1])
+        wave_cut = (w >= self.l_range[0]) & (w < self.l_range[1])
         f = f[wave_cut]
         v = v[wave_cut]
         w = w[wave_cut]
@@ -140,7 +141,7 @@ class Measure(object):
         """Returns the spectrum in restricted range between the
         """
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
-        wave_cut = (w >= self.l_brange[0]) & (w <= self.l_rrange[1])
+        wave_cut = (w >= self.l_brange[0]) & (w < self.l_rrange[1])
         f = f[wave_cut]
         v = v[wave_cut]
         w = w[wave_cut]
@@ -148,7 +149,7 @@ class Measure(object):
             raise MissingDataError
         return w, f, v
 
-    def get_smooth_feature_spec(self):
+    def get_smoothed_feature_spec(self):
         raise NotImplementedError
 
     def get_interp_feature_spec(self):

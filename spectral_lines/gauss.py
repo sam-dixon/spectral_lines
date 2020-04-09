@@ -28,6 +28,10 @@ class Gauss(Measure):
             flux = self.flux_subfeat
             var = self.var_subfeat
 
+            scale_factor = np.median(flux)
+            flux /= scale_factor
+            var /= scale_factor ** 2
+
             def chisq(a, b, amp, mu, sig):
                 model = gaussian(wave, a, b, amp, mu, sig)
                 return np.sum((flux-model)**2/var)
@@ -42,6 +46,9 @@ class Gauss(Measure):
                        print_level=0)
             fval, res = m.migrad()
             popt = [r['value'] for r in res]
+            popt[0] *= scale_factor
+            popt[1] *= scale_factor
+            popt[2] *= scale_factor
             self._gauss_params = popt
         return self._gauss_params
 
