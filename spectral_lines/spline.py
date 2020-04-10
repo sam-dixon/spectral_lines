@@ -31,11 +31,6 @@ class Spl(Measure):
         # Cut out wavelengths outside smoothing window
         smooth_wave = wave[int(self.n_l/2):int(-self.n_l/2)]
         f_ts = np.array(f_ts)
-        # Check that the variance is such that the spectrum isn't oversmoothed
-        flux_diff = f_ts - f[int(self.n_l / 2):int(-self.n_l / 2)]
-        flux_err = np.sqrt(v[int(self.n_l / 2):int(-self.n_l / 2)])
-        if not np.all(np.abs(flux_diff) <= 6 * flux_err):
-            print('Spectrum may be oversmoothed! Check the variance.')
         return smooth_wave, f_ts
 
     def get_interp_feature_spec(self, return_spl=False):
