@@ -53,10 +53,6 @@ class TestSpline:
             flux_err = np.sqrt(meas.var_feat[np.in1d(wave_feat, wave)])
             assert np.all(np.abs(flux_diff) <= 5 * flux_err)
 
-    def test_smoothing_error(self, state):
-        with pytest.raises(RuntimeWarning):
-            state.idr_sim_wrong_var.get_smoothed_feature_spec()
-
     def test_interp(self, state):
         for name, meas in state.measurements.items():
             wave, flux = meas.get_interp_feature_spec()
