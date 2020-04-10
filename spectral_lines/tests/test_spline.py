@@ -54,7 +54,7 @@ class TestSpline:
             assert np.all(np.abs(flux_diff) <= 5 * flux_err)
 
     def test_smoothing_error(self, state):
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeWarning):
             state.idr_sim_wrong_var.get_smoothed_feature_spec()
 
     def test_interp(self, state):
