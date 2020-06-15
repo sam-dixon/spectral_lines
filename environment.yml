@@ -8,3 +8,4 @@ dependencies:
   - iminuit
   - pytest
   - sncosmo
+  - pandas

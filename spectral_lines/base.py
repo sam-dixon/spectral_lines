@@ -4,17 +4,50 @@ from scipy.interpolate import splrep, splev
 
 
 # Lines are taken from Chotard (in prep)
-# Format: [l_0, l_min, l_max, l_bmin, l_bmax, l_rmin, l_rmax]
-lines = {'CaII':     [3945., 3450., 4070., 3504., 3687., 3830., 3990.],
-         'SiII4131': [4131., 3850., 4150., 3830., 3990., 4030., 4150.],
-         'MgII4300': [4481., 4000., 4610., 4030., 4150., 4450., 4650.],
-         'FeII4800': [4966., 4350., 5350., 4450., 4650., 5050., 5285.],
-         'SIIWL':    [5454., 5060., 5700., 5050., 5285., 5500., 5681.],
-         'SIIWR':    [5640., 5060., 5700., 5050., 5285., 5500., 5681.],
-         'SIIW':     [5500., 5060., 5700., 5050., 5285., 5500., 5681.],
-         'SiII5972': [5972., 5500., 6050., 5550., 5681., 5850., 6015.],
-         'SiII6355': [6355., 5600., 6600., 5850., 6015., 6250., 6365.],
-         'OICaII':   [8100., 6500., 8800., 7100., 7270., 8300., 8800.]}
+extrema_lims = {
+    'CaIIHK':   {'b': (3504., 3687.), 'r': (3830., 3990.)},
+    'SiII4000': {'b': (3830., 3990.), 'r': (4030., 4150.)},
+    'MgII':     {'b': (4030., 4150.), 'r': (4450., 4650.)},
+    'Fe4800':   {'b': (4450., 4650.), 'r': (5050., 5285.)},
+    'SIIW_L':   {'b': (5050., 5285.), 'r': (5500., 5681.)},
+    'SIIW_R':   {'b': (5050., 5285.), 'r': (5500., 5681.)},
+    'SIIW':     {'b': (5050., 5285.), 'r': (5500., 5681.)},
+    'SiII5972': {'b': (5550., 5681.), 'r': (5850., 6015.)},
+    'SiII6355': {'b': (5850., 6015.), 'r': (6250., 6365.)},
+    'OI7773':   {'b': (7100., 7270.), 'r': (7720., 8000.)},
+}
+vel_lims = {
+    'SiII4000': (3963, 4034),
+    'SIIW_L':   (5200, 5350),
+    'SIIW_R':   (5351, 5550),
+    'SiII5972': (5700, 5875),
+    'SiII6355': (6000, 6210),
+}
+lambda0 = {
+    'CaIIHK':   3945.,
+    'SiII4000': 4131.,
+    'MgII':     4481.,
+    'Fe4800':   4966.,
+    'SIIW_L':   5454.,
+    'SIIW_R':   5640.,
+    'SIIW':     5500.,
+    'SiII5972': 5972.,
+    'SiII6355': 6355.,
+    'OI7773':   8100.,
+}
+
+line_names = [
+    'CaIIHK',
+    'SiII4000',
+    'MgII',
+    'Fe4800',
+    'SIIW_L',
+    'SIIW_R',
+    'SIIW',
+    'SiII5972',
+    'SiII6355',
+    'OI7773',
+]
 
 
 class MissingDataError(Exception):
@@ -41,10 +74,10 @@ class Measure(object):
 
         """
         self.line = line
-        self.l0 = lines[line][0]
-        self.l_range = lines[line][1:3]
-        self.l_brange = lines[line][3:5]
-        self.l_rrange = lines[line][5:]
+        self.l0 = lambda0[line]
+        self.l_range = (extrema_lims[line]['b'][0], extrema_lims[line]['r'][1])
+        self.l_brange = extrema_lims[line]['b']
+        self.l_rrange = extrema_lims[line]['r']
         self.interp_grid = interp_grid
         self.norm = norm
         if sim:
@@ -187,7 +220,12 @@ class Measure(object):
             w, f = self.get_interp_feature_spec()
             f_cont = self.get_pseudo_continuum()
             f /= f_cont
-            search_range = (w >= self.l_brange[-1]) & (w <= self.l_rrange[0])
+            try:
+                search_range = (w >= vel_lims[self.line][0])
+                search_range &= (w <= vel_lims[self.line][1])
+            except KeyError:
+                search_range = (w >= self.maxima['blue_max_wave'])
+                search_range &= (w <= self.maxima['red_max_wave'])
             min_f = np.min(f[search_range])
             self._minimum = w[np.where(f == min_f)][0]
         return self._minimum
