@@ -90,15 +90,11 @@ class Measure(object):
             self.wave_sn, self.flux_sn, self.var_sn = self.get_line_norm_spec()
         try:
             wave_feat, flux_feat, var_feat = self.get_feature_spec()
-            wave_subfeat, flux_subfeat, var_subfeat = self.get_subfeature_spec()
         except MissingDataError:
             raise
         self.wave_feat = wave_feat
         self.flux_feat = flux_feat
         self.var_feat = var_feat
-        self.wave_subfeat = wave_subfeat
-        self.flux_subfeat = flux_subfeat
-        self.var_subfeat = var_subfeat
         self._maxima = None
         self._minimum = None
 
@@ -155,9 +151,8 @@ class Measure(object):
         f_rmax = f[w == w_rmax]
         slope = (f_rmax - f_bmax)/(w_rmax - w_bmax)
         intercept = f_bmax - slope * w_bmax
-        line = lambda x: slope * x + intercept
-        f_norm = f / line(w)
-        v_norm = v / line(w) ** 2
+        f_norm = f / slope * w + intercept
+        v_norm = v / (slope * w + intercept) ** 2
         return w, f_norm, v_norm
 
     def get_feature_spec(self):
@@ -166,18 +161,6 @@ class Measure(object):
         """  
         w, f, v = self.wave_sn, self.flux_sn, self.var_sn
         wave_cut = (w >= self.l_range[0]) & (w < self.l_range[1])
-        f = f[wave_cut]
-        v = v[wave_cut]
-        w = w[wave_cut]
-        if len(w) == 0:
-            raise MissingDataError
-        return w, f, v
-    
-    def get_subfeature_spec(self):
-        """Returns the spectrum in restricted range between the
-        """
-        w, f, v = self.wave_sn, self.flux_sn, self.var_sn
-        wave_cut = (w >= self.l_brange[0]) & (w < self.l_rrange[1])
         f = f[wave_cut]
         v = v[wave_cut]
         w = w[wave_cut]
