@@ -102,15 +102,18 @@ class Measure(object):
         self._maxima = None
         self._minimum = None
 
-    def vel_space(self, wave):
+    def vel_space(self, wave, rel=True):
         """
         Returns the feature spectrum in velocity space using the relativistic
         Doppler formula (units are km/s).
         """
         c = 3.e5  # speed of light in km/s
-        dl = wave-self.l0
-        ddl = dl/self.l0
-        v = c*((ddl+1.)**2.-1.)/((ddl+1.)**2.+1.)
+        dl = wave - self.l0
+        ddl = dl / self.l0
+        if rel:
+            v = c*((ddl+1.)**2.-1.)/((ddl+1.)**2.+1.)
+        else:
+            v = c * ddl
         return v
 
     def wave_space(self, vel):
