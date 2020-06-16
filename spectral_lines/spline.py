@@ -2,6 +2,9 @@ import numpy as np
 from .base import Measure
 from scipy.interpolate import UnivariateSpline
 
+def gaussian(x, mu, sigma):
+    return 1/np.sqrt(2*np.pi) * np.exp(-(x-mu)**2/sigma**2)
+
 
 class Spl(Measure):
 
@@ -18,20 +21,18 @@ class Spl(Measure):
         """
         Returns the smoothed feature spectrum.
         """
-        wave, f, v = self.wave_feat, self.flux_feat, self.var_feat
-        f_ts = []
-        for i in range(int(self.n_l/2), int(len(f)-self.n_l/2)):
-            sig = wave[i]*self.smooth_fac
-            sub = range(int(i-self.n_l/2), int(i+self.n_l/2))
-            x = wave[i]-wave[sub]
-            g = 1/np.sqrt(2*np.pi)*np.exp(-1/sig**2*x**2)
-            w = g/v[sub]
-            f_ts_i = np.dot(w, f[sub])/np.sum(w)
-            f_ts.append(f_ts_i)
-        # Cut out wavelengths outside smoothing window
-        smooth_wave = wave[int(self.n_l/2):int(-self.n_l/2)]
-        f_ts = np.array(f_ts)
-        return smooth_wave, f_ts
+        wave, flux, var = self.wave_feat, self.flux_feat, self.var_feat
+        half = int(self.n_l/2)
+        windows = np.array([range(i-half, i+half+1)
+                            for i in range(half, len(wave)-half)])
+        weights = np.array([gaussian(wave[w], wave[w[half]],
+                                     wave[w[half]] * self.smooth_fac) /
+                            var[w] for w in windows])
+        windowed_flux = np.array([flux[w] for w in windows])
+        smooth_wave = np.array([wave[w[half]] for w in windows])
+        smooth_flux = np.dot(weights, windowed_flux.T).sum(
+            axis=0) / weights.sum()
+        return smooth_wave, smooth_flux
 
     def get_interp_feature_spec(self, return_spl=False):
         """
