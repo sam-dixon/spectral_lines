@@ -17,10 +17,10 @@ class TestDoublet:
         sn = np.random.choice(DS.sne)
         idr_spec = sn.spec_nearest(0)
         self.idr_si = Doublet(idr_spec)
-        self.idr_ca = Doublet(idr_spec, line='CaII')
+        self.idr_ca = Doublet(idr_spec, line='CaIIHK')
         wave, flux, var = idr_spec.rf_spec()
         self.idr_sim_si = Doublet([wave, flux, var], sim=True)
-        self.idr_sim_ca = Doublet([wave, flux, var], line='CaII', sim=True)
+        self.idr_sim_ca = Doublet([wave, flux, var], line='CaIIHK', sim=True)
         wrong_var = np.mean(flux)/1e6 * np.ones(flux.shape)
         self.idr_sim_wrong_var = Doublet([wave, flux, wrong_var], sim=True)
         guess_var = (0.1 * np.quantile(flux, 0.99)) ** 2 * np.ones(flux.shape)
@@ -32,7 +32,7 @@ class TestDoublet:
         sim_var *= np.ones(sim_flux.shape)
         sim_flux += np.sqrt(sim_var) * np.random.randn(len(sim_flux))
         self.sim_si = Doublet([sim_wave, sim_flux, sim_var], sim=True)
-        self.sim_ca = Doublet([sim_wave, sim_flux, sim_var], line='CaII',
+        self.sim_ca = Doublet([sim_wave, sim_flux, sim_var], line='CaIIHK',
                               sim=True)
         self.sim_si_tiny = Doublet([sim_wave, sim_flux/1e16, sim_var/1e32],
                                    sim=True)

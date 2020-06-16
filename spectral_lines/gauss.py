@@ -24,9 +24,9 @@ class Gauss(Measure):
     def gauss_params(self):
         """Fits a Gaussian to the restricted wavelength range of the feature"""
         if not self._gauss_params:
-            wave = self.wave_subfeat
-            flux = self.flux_subfeat
-            var = self.var_subfeat
+            wave = self.wave_feat
+            flux = self.flux_feat
+            var = self.var_feat
 
             scale_factor = np.median(flux)
             flux /= scale_factor

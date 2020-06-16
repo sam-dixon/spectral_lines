@@ -29,7 +29,7 @@ class TestBase:
 
     def test_load_sim_sn(self, state):
         assert state.sim_meas.wave_sn.shape[0] == state.sim_wave.shape[0]
-        assert state.sim_meas.wave_feat.shape[0] == 500
+        assert state.sim_meas.wave_feat.shape[0] == 258
 
     def test_raise_not_implemented(self, state):
         with pytest.raises(NotImplementedError):
