@@ -57,7 +57,6 @@ def plot_extrema(meas, **kwargs):
 
 def main():
     # Set up data set
-    # TODO: move the data to a separate data folder
     sn = np.random.choice(DS.sne)
     spec = sn.spec_nearest(phase=0)
     print(spec.target_name, 'phase: {:+0.3f} days'.format(spec.salt2_phase))
@@ -65,13 +64,13 @@ def main():
     # Initialize measurement objects
     objects = {}
     for method in methods.keys():
-        for norm in ['SNID']:
+        for norm in ['SNID', 'None']:
             key = '{}_{}'.format(method, norm)
             objects[key] = methods[method](spec, norm=norm)
 
     # Check normalization
     plot_norm_spec(objects['spline_SNID'])
-    plot_norm_spec(objects['spline_line'])
+    plot_norm_spec(objects['spline_None'])
     plt.legend()
     plt.title('Normalization {}'.format(sn.target_name))
     plt.show()
