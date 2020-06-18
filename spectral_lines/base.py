@@ -5,13 +5,13 @@ from scipy.interpolate import splrep, splev
 
 # Lines are taken from Chotard (in prep)
 extrema_lims = {
-    'CaIIHK':   {'b': (3504., 3687.), 'r': (3830., 3990.)},
-    'SiII4000': {'b': (3830., 3990.), 'r': (4030., 4150.)},
-    'MgII':     {'b': (4030., 4150.), 'r': (4450., 4650.)},
-    'Fe4800':   {'b': (4450., 4650.), 'r': (5050., 5285.)},
-    'SIIW_L':   {'b': (5050., 5285.), 'r': (5500., 5681.)},
-    'SIIW_R':   {'b': (5050., 5285.), 'r': (5500., 5681.)},
-    'SIIW':     {'b': (5050., 5285.), 'r': (5500., 5681.)},
+    'CaIIHK':   {'b': (3504., 3687.), 'r': (3887., 3990.)},
+    'SiII4000': {'b': (3830., 3963.), 'r': (4034., 4150.)},
+    'MgII':     {'b': (4034., 4150.), 'r': (4452., 4573.)},
+    'Fe4800':   {'b': (4400., 4650.), 'r': (5050., 5300.)},
+    'SIIW_L':   {'b': (5085., 5250.), 'r': (5250., 5450.)},
+    'SIIW_R':   {'b': (5250., 5450.), 'r': (5500., 5681.)},
+    'SIIW':     {'b': (5085., 5250.), 'r': (5500., 5681.)},
     'SiII5972': {'b': (5550., 5681.), 'r': (5850., 6015.)},
     'SiII6355': {'b': (5850., 6015.), 'r': (6250., 6365.)},
     'OI7773':   {'b': (7100., 7270.), 'r': (7720., 8000.)},
@@ -20,7 +20,7 @@ vel_lims = {
     'SiII4000': (3963, 4034),
     'SIIW_L':   (5200, 5350),
     'SIIW_R':   (5351, 5550),
-    'SiII5972': (5700, 5875),
+    'SiII5972': (5700, 5900),
     'SiII6355': (6000, 6210),
 }
 lambda0 = {
@@ -65,12 +65,11 @@ class Measure(object):
         `spectrum` is an `IDRTools.Spectrum` object if `sim == False`, or a
         list `[wave, flux, flux_var]` if `sim == True`.
 
-        `norm` can be set to `None`, `'SNID'`, or `'deriv'`.
+        `norm` can be set to `'SNID'` or `'None'`
             *If `None`, no flux normalization will be done.
             *If `'SNID'`, a 13-point spline will be fit to the entire spectrum
             and this spline is divided out (see Blondin and Tonry 2007.)
-            *If `'line'`, look for local maxima between l_bmin-l_bmax and
-            l_rmin-l_rmax, and divide out the line between these maxima.
+
 
         """
         self.line = line
@@ -86,8 +85,6 @@ class Measure(object):
             self.wave_sn, self.flux_sn, self.var_sn = spectrum.rf_spec()
         if self.norm == 'SNID':
             self.wave_sn, self.flux_sn, self.var_sn = self.get_snid_norm_spec()
-        elif self.norm == 'line':
-            self.wave_sn, self.flux_sn, self.var_sn = self.get_line_norm_spec()
         try:
             wave_feat, flux_feat, var_feat = self.get_feature_spec()
         except MissingDataError:
@@ -95,8 +92,12 @@ class Measure(object):
         self.wave_feat = wave_feat
         self.flux_feat = flux_feat
         self.var_feat = var_feat
+        self._interp_wave = None
+        self._interp_flux = None
         self._maxima = None
         self._minimum = None
+        self._velocity = None
+        self._equiv_width = None
 
     def vel_space(self, wave, rel=True):
         """
@@ -135,26 +136,6 @@ class Measure(object):
         v_cont_div = v/f_cont**2
         return w, cont_div, v_cont_div
 
-    def get_line_norm_spec(self):
-        """
-        Look for local maxima in blue and red ranges (defined by the line)
-        and divide out the line connecting these maxima.
-        """
-        w, f, v = self.wave_sn, self.flux_sn, self.var_sn
-        fb = f[(w > self.l_brange[0]) & (w < self.l_brange[1])]
-        fr = f[(w > self.l_rrange[0]) & (w < self.l_rrange[1])]
-        if len(fb) == 0 or len(fr) == 0:
-            raise MissingDataError
-        w_bmax = w[f == np.max(fb)]
-        w_rmax = w[f == np.max(fr)]
-        f_bmax = f[w == w_bmax]
-        f_rmax = f[w == w_rmax]
-        slope = (f_rmax - f_bmax)/(w_rmax - w_bmax)
-        intercept = f_bmax - slope * w_bmax
-        f_norm = f / slope * w + intercept
-        v_norm = v / (slope * w + intercept) ** 2
-        return w, f_norm, v_norm
-
     def get_feature_spec(self):
         """
         Returns the spectrum in l_range.
@@ -175,9 +156,15 @@ class Measure(object):
         raise NotImplementedError
 
     @property
+    def interp_feature_spec(self):
+        if self._interp_flux is None:
+            self._interp_wave, self._interp_flux = self.get_interp_feature_spec()
+        return self._interp_wave, self._interp_flux
+
+    @property
     def maxima(self):
         if not self._maxima:
-            w, f = self.get_interp_feature_spec()
+            w, f = self.interp_feature_spec
             bw_cut = (w >= self.l_brange[0]) & (w <= self.l_brange[1])
             rw_cut = (w >= self.l_rrange[0]) & (w <= self.l_rrange[1])
             max_b_ind = np.where(f[bw_cut] == max(f[bw_cut]))[0]
@@ -192,7 +179,7 @@ class Measure(object):
     def get_pseudo_continuum(self):
         """Returns the line connecting the ends of the feature
         """
-        wave, _ = self.get_interp_feature_spec()
+        wave, _ = self.interp_feature_spec
         flux_diff = self.maxima['red_max_flux'] - self.maxima['blue_max_flux']
         wave_diff = self.maxima['red_max_wave'] - self.maxima['blue_max_wave']
         slope = flux_diff / wave_diff
@@ -203,7 +190,7 @@ class Measure(object):
     @property
     def minimum(self):
         if not self._minimum:
-            w, f = self.get_interp_feature_spec()
+            w, f = self.interp_feature_spec
             f_cont = self.get_pseudo_continuum()
             f /= f_cont
             try:
@@ -224,6 +211,12 @@ class Measure(object):
         v_abs = self.vel_space(self.minimum)
         return v_abs
 
+    @property
+    def velocity(self):
+        if not self._velocity:
+            self._velocity = self.get_line_velocity()
+        return self._velocity
+
     def get_equiv_width(self):
         w, f = self.get_interp_feature_spec()
         f_c = self.get_pseudo_continuum()
@@ -232,3 +225,66 @@ class Measure(object):
         wb_ind = np.where(w == self.maxima['blue_max_wave'])[0][0]
         wr_ind = np.where(w == self.maxima['red_max_wave'])[0][0]
         return np.sum(np.dot(integrand[wb_ind:wr_ind], dl[wb_ind:wr_ind]))
+
+    @property
+    def equiv_width(self):
+        if not self._equiv_width:
+            self._equiv_width = self.get_equiv_width()
+        return self._equiv_width
+
+
+class MeasureSimErrors(object):
+
+    def __init__(self, spec, kind, n_sims=50, line='SiII6355', sim=False,
+                 interp_grid=0.1, norm='SNID', **kwargs):
+        if sim:
+            wave, flux, var = np.array(spec)
+        else:
+            wave, flux, var = spec.rf_spec()
+        self.sims = []
+        for sim_id in range(n_sims):
+            noised_flux = flux + np.random.randn(len(wave)) * np.sqrt(var)
+            self.sims.append(kind([wave, noised_flux, var], sim=True,
+                                  line=line, interp_grid=interp_grid,
+                                  norm=norm, **kwargs))
+        self._minimum = None
+        self._maxima = None
+        self._velocity = None
+        self._equiv_width = None
+
+    @property
+    def minimum(self):
+        if not self._minimum:
+            sim_minima = [sim.minimum for sim in self.sims]
+            self._minimum = {'mean': np.mean(sim_minima),
+                             'std': np.std(sim_minima)}
+        return self._minimum
+
+    @property
+    def velocity(self):
+        if not self._velocity:
+            sim_vel = [sim.velocity for sim in self.sims]
+            self._velocity = {'mean': np.mean(sim_vel),
+                              'std': np.std(sim_vel)}
+        return self._velocity
+
+    @property
+    def maxima(self):
+        if not self._maxima:
+            sim_maxima = [sim.maxima for sim in self.sims]
+            self._maxima = {}
+            keys = sim_maxima[0].keys()
+            for key in keys:
+                vals = [sim[key] for sim in sim_maxima]
+                self._maxima[key] = {'mean': np.mean(vals),
+                                     'std': np.std(vals)}
+        return self._maxima
+
+    @property
+    def equiv_width(self):
+        if not self._equiv_width:
+            sim_ew = [sim.equiv_width for sim in self.sims]
+            self._equiv_width = {'mean': np.mean(sim_ew),
+                                 'std': np.std(sim_ew)}
+        return self._equiv_width
+

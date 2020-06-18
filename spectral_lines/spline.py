@@ -14,8 +14,6 @@ class Spl(Measure):
         self.n_l = n_l
         self.smooth_fac = smooth_fac
         self.kind = 'spline'
-        self._maxima = None
-        self._minimum = None
 
     def get_smoothed_feature_spec(self):
         """
@@ -34,6 +32,7 @@ class Spl(Measure):
             axis=0) / weights.sum()
         return smooth_wave, smooth_flux
 
+
     def get_interp_feature_spec(self, return_spl=False):
         """
         Returns the spline interpolated, smoothed feature spectrum
@@ -47,4 +46,5 @@ class Spl(Measure):
             return w_int, f_int, spl
         else:
             return w_int, f_int
+
 
