@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='spectral_lines',
-      version='0.1',
+      version='0.2',
       description='Tools for fitting spectral lines',
       url='http://github.com/sam-dixon/spectral_lines',
       author='Sam Dixon',
