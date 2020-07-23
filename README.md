@@ -1,7 +1,7 @@
 # Spectral Lines
 Tools for measuring spectral features with a variety of smoothing and modeling methods.
 
-## Methods
+## Methodology
 The spectral features are defined in 10 different zones.
 
 | Feature name | lambda | Blue lambda_min | Blue lambda_max | Red lambda_min | Red lambda_max |
@@ -35,19 +35,20 @@ This base class also has methods for finding local extrema once the spectrum is 
 
 **Note**: The velocity calculation in this code uses the relativistic Doppler equation, unlike most spectral feature measurements (including the SNfactory pipeline).
 
-The remaining objects all inherit from this base measurement class and  implement particular smoothing methods. The interface is through:
-* `get_smoothed_feature_spec`: returns the flux of the feature smoothed by the method. The wavelengths that the flux model is evaluated at are the same as the input spectrum
+Every measurement object inherits from the base measurement class and  implement particular smoothing methods. The interface is through:
+* `get_smoothed_feature_spec`: This method returns the flux of the feature smoothed by the corresponding smoothing methodology. The wavelengths that the flux model is evaluated at are the same as the input spectrum
 * `get_interp_feature_spec`: same as `get_smoothed_feature_spec` but interpolated on a finer wavelength grid (determined by the `interp_grid` parameter)
 
-### Spline (`spline.py`)
+### Smoothing options
+#### Spline (`spline.py`)
 An inverse-Gaussian weighted spline is used to smooth and interpolate the raw spectrum. This is the method presented in [Blondin et al. 2006](https://ui.adsabs.harvard.edu/abs/2006AJ....131.1648B/abstract). First, we define a Gaussian window with a width corresponding to the approximate scale of Doppler broadening of the spectral lines at each wavelength. This Gaussian filter is then weighted by the inverse of the variance of the observed spectrum, and then applied to the spectrum signal.
 
 This method requires an accurate variance spectrum to be provided. If the variance is overestimated, the resulting smoothed spectrum will be oversmoothed, which can bias some of the spectral feature measurements. 
 
-### Savitsky-Golay smoothing (`sg.py`)
+#### Savitsky-Golay smoothing (`sg.py`)
 This is the method laid out in Chotard et al. (in prep)., and matches the behavior of the code in the SNfactory pipeline. This method uses a [Savitsky-Golay filter](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter) with a smoothing window width determined optimally (Appendix A of the paper).
 
-### Gaussian and Gaussian doublet (`gauss.py` and `doublet.py`)
+#### Gaussian and Gaussian doublet (`gauss.py` and `doublet.py`)
 These use simple maximum likelihood estimation to fit a Gaussian/double Gaussian profile to the zone.
 
 ## Scripts and notebooks
